@@ -1,0 +1,18 @@
+# --- Project Specific ---
+.cursor/
+.claude/
+log*
+.safety-net.json
+.opencode
+.gemini
+docs
+.cc-safetynet-rules
+.cc-safety-net
+coverage
+.codex
+codex-security-scans
+
+# --- Node.js ---
+node_modules/
+droid-wiki
+plans
