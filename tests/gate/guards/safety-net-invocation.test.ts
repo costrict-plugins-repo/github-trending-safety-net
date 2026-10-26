@@ -1,0 +1,113 @@
+import { describe, expect, test } from 'bun:test';
+import { safetyNetSubcommandIndex } from '@/gate/guards/safety-net-invocation';
+
+describe('safetyNetSubcommandIndex', () => {
+  test('locates the subcommand of a runner spelling, under-matching or over-matching by mode', () => {
+    const spellings: readonly {
+      readonly command: string;
+      readonly tokens: readonly string[];
+      readonly narrow: number | null;
+      readonly broad: number | null;
+    }[] = [
+      { command: 'cc-safety-net', tokens: ['explain', 'x'], narrow: 0, broad: 0 },
+      { command: 'ccsn', tokens: [], narrow: 0, broad: 0 },
+      { command: 'npx', tokens: ['cc-safety-net', 'policy', 'apply'], narrow: 1, broad: 1 },
+      { command: 'npx', tokens: ['-y', 'cc-safety-net', 'explain', 'x'], narrow: 2, broad: 2 },
+      {
+        command: 'npx',
+        tokens: ['--loglevel=silent', 'cc-safety-net', 'policy', 'apply'],
+        narrow: null,
+        broad: 2,
+      },
+      {
+        command: 'npx',
+        tokens: ['--package', 'cc-safety-net', 'ccsn', 'policy', 'apply'],
+        narrow: null,
+        broad: 3,
+      },
+      { command: 'npx', tokens: ['ccsn@latest', 'explain', 'x'], narrow: 1, broad: 1 },
+      { command: 'npx', tokens: ['cc-safety-net@npm:other', 'status'], narrow: null, broad: null },
+      { command: 'npx', tokens: ['@scope/cc-safety-net', 'status'], narrow: null, broad: null },
+      {
+        command: 'npx',
+        tokens: ['./node_modules/.bin/cc-safety-net', 'status'],
+        narrow: null,
+        broad: null,
+      },
+      { command: 'pnpm', tokens: ['dlx', 'cc-safety-net', 'policy', 'apply'], narrow: 2, broad: 2 },
+      {
+        command: 'yarn',
+        tokens: ['dlx', 'cc-safety-net', 'policy', 'apply'],
+        narrow: null,
+        broad: 2,
+      },
+      {
+        command: 'pnpm',
+        tokens: ['dlx', 'other-package', 'policy', 'apply'],
+        narrow: null,
+        broad: null,
+      },
+      {
+        command: 'npm',
+        tokens: ['exec', 'cc-safety-net', 'policy', 'apply'],
+        narrow: null,
+        broad: 2,
+      },
+      {
+        command: 'npm',
+        tokens: ['--silent', 'exec', 'cc-safety-net', 'policy', 'apply'],
+        narrow: null,
+        broad: 3,
+      },
+      {
+        command: 'bun',
+        tokens: ['dist/bin/cc-safety-net.js', 'policy', 'apply'],
+        narrow: 1,
+        broad: 1,
+      },
+      {
+        command: 'bun',
+        tokens: ['run', 'dist/bin/cc-safety-net.js', 'policy', 'apply'],
+        narrow: 2,
+        broad: 2,
+      },
+      {
+        command: 'node',
+        tokens: ['run', 'dist/bin/cc-safety-net.js', 'policy', 'apply'],
+        narrow: null,
+        broad: null,
+      },
+      {
+        command: 'node',
+        tokens: ['--experimental-strip-types', 'src/cli/cc-safety-net.ts', 'explain', 'x'],
+        narrow: null,
+        broad: 2,
+      },
+      {
+        command: 'node',
+        tokens: ['C:\\app\\dist\\bin\\cc-safety-net.js', 'policy', 'apply'],
+        narrow: 1,
+        broad: 1,
+      },
+      {
+        command: 'node',
+        tokens: ['dist/bin/hook.js', 'policy', 'apply'],
+        narrow: 1,
+        broad: 1,
+      },
+      { command: 'bun', tokens: ['src/entries/bin.ts', 'explain', 'x'], narrow: 1, broad: 1 },
+      { command: 'sh', tokens: ['cc-safety-net', 'explain', 'x'], narrow: null, broad: null },
+      { command: 'deno', tokens: ['cc-safety-net', 'explain'], narrow: null, broad: null },
+    ];
+    for (const row of spellings) {
+      const label = `${row.command} ${row.tokens.join(' ')}`;
+      expect(safetyNetSubcommandIndex(row.command, row.tokens, {}), label).toBe(row.narrow);
+      expect(safetyNetSubcommandIndex(row.command, row.tokens, { broad: false }), label).toBe(
+        row.narrow,
+      );
+      expect(safetyNetSubcommandIndex(row.command, row.tokens, { broad: true }), label).toBe(
+        row.broad,
+      );
+    }
+  });
+});
